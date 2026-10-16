@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>间断点与序数 · ε₀ 互译</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<style>
+:root{color-scheme:light;--ink:#1b1b19;--muted:#78786f;--line:#e7e7e0;--accent:#2f5d50;--paper:#fdfdfb;--math:"Cambria Math",Cambria,Georgia,"Times New Roman",serif;--mono:ui-monospace,SFMono-Regular,Consolas,"Cascadia Mono",monospace}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.75 system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+main{max-width:640px;margin:0 auto;padding:76px 24px 104px}
+h1{font-size:20px;font-weight:600;letter-spacing:.01em;margin:0 0 8px}
+.def{font-size:16px;color:var(--ink);margin:0 0 40px}
+.def .katex-display{margin:0}
+label{display:block;font-size:12px;color:var(--muted);margin:24px 0 4px}
+.tabs{display:flex;gap:24px;margin:0 0 32px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;border:0;background:none;padding:0 0 12px;margin:0 0 -1px;font:14px/1.4 inherit;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:var(--ink);font-weight:500;border-bottom-color:var(--accent)}
+@media(max-width:620px){.tabs{gap:13px 15px;flex-wrap:wrap}.tabs button{font-size:13px;padding-bottom:10px}}
+select,input{width:100%;font:inherit;color:inherit;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:7px 0;appearance:none;-webkit-appearance:none}
+select:focus,input:focus{outline:0;border-bottom-color:var(--accent)}
+input{font-family:var(--mono);font-size:15px}
+.hint{font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.8}
+.actions{display:flex;justify-content:flex-end;margin-top:28px}
+button{cursor:pointer;font:inherit}
+button.primary{border:0;border-radius:6px;background:var(--accent);color:#fff;padding:9px 20px}
+button.primary:hover{background:#274d42}button:disabled{opacity:.5;cursor:wait}
+.result{margin-top:40px;padding-top:26px;border-top:1px solid var(--line);min-height:72px}
+.status{font-size:12px;color:var(--muted)}.status.error{color:#a4492c}
+.value{margin-top:8px;overflow-wrap:anywhere}
+.value.plain{font-size:15px;line-height:1.75;white-space:pre-wrap;color:var(--muted)}
+#details{margin-top:12px;font-size:12.5px;color:var(--muted);line-height:2}
+.plot{margin:66px 0 0}svg{width:100%;height:auto;display:block}
+figcaption{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.8}
+.note{margin-top:66px;font-size:12.5px;color:var(--muted);line-height:1.9}
+footer{font-size:12px;color:#9c9c93;margin-top:16px;line-height:1.8}
+@media(max-width:620px){main{padding:52px 18px 84px}}
+
+/* 公式排版：离线 HTML/CSS，无外部字体或脚本 */
+.mrow{font-family:var(--math);font-size:26px;line-height:1.85}
+.mrow.sm{font-size:17px;line-height:1.9}
+.mrow .frac{display:inline-grid;align-items:center;vertical-align:middle;text-align:center;margin:0 .28em;line-height:1.2}
+.mrow .frac>.num{padding:.04em .34em .13em;border-bottom:1px solid currentColor}
+.mrow .frac>.den{padding:.11em .34em .02em}
+.mrow sup{font-size:.6em;vertical-align:.62em;line-height:0}
+.mrow .bigop{display:inline-flex;flex-direction:column;align-items:center;vertical-align:-.36em;margin:0 .14em;font-size:.86em;line-height:1.02}
+.mrow .bigop .up,.mrow .bigop .dn{font-size:.72em;color:var(--muted);white-space:nowrap}
+.mrow .bigop .sym{font-size:1.7em;line-height:1}
+.mrow i{font-style:italic}
+.mrow .lit{font-family:var(--mono);font-size:.88em;letter-spacing:-.01em}
+.mrow .paren{color:var(--muted)}
+.preview{margin-top:12px}
+.preview:empty{display:none}
+.preview .mrow{font-size:19px}
+@media(max-width:620px){.mrow{font-size:23px}}
+</style>
+<main>
+<h1>间断点 ↔ 序数</h1>
+<p class="def" id="def" data-tex="f(x)=\begin{cases}-x, & x<0\\[6pt]\dfrac{1}{2}f\left(x-f(x-1)\right), & x\ge 0\end{cases}">f(x) = −x&nbsp;&nbsp;(x &lt; 0)<br>f(x) = ½ f(x − f(x − 1))&nbsp;&nbsp;(x ≥ 0)</p>
+
+<nav class="tabs" id="tabs" role="tablist">
+<button type="button" role="tab" data-action="eval" class="on" aria-selected="true">计算 f(x)</button>
+<button type="button" role="tab" data-action="encode" aria-selected="false">序数 → 间断点</button>
+<button type="button" role="tab" data-action="decode" aria-selected="false">实数 → 序数</button>
+<button type="button" role="tab" data-action="gap" aria-selected="false">跳跃高度</button>
+</nav>
+
+<form id="form">
+<input type="hidden" id="action" value="eval">
+<label id="inputLabel" for="value">精确有理数或二次幂表达式 x</label>
+<input id="value" value="2.999" spellcheck="false" autocomplete="off" required>
+<div class="preview" id="preview"></div>
+<p class="hint" id="inputHint">w 或 ω 表示 ω；例如 w^2*3+w+4。乘号须显式书写。</p>
+<div class="actions">
+<button class="primary" id="submit">计算</button>
+</div>
+</form>
+<div class="result" aria-live="polite"><div class="status" id="status">准备就绪</div><div class="value" id="answer">α = ω² + ω</div><div class="hint" id="details">选择操作并输入，得到精确结果。</div></div>
+
+<figure class="plot">
+<svg id="plot" viewBox="0 0 900 270" role="img" aria-label="零至一点五附近的函数有限段示意，跳跃点以实心圆表示"></svg>
+<figcaption>精确线段的有限展示：空心圆为左极限 0，实心圆为函数值；趋近聚点的无穷尾部留空。1、3/2、2 等聚点自身也不连续。</figcaption>
+</figure>
+<p class="note">全部运算采用精确有理数。[0,3) 的有理数使用间隙相位状态缓存与循环跳过，3 使用精确指数公式；3 以上尝试普通序数递推，未展开的指数保留为 d(α) 并明确标注。超出资源时会显示“计算资源不足”，不会误判为“不是间断点”。</p>
+<footer>依据 Erickson、Nivasch、Xu《Fusible numbers and Peano Arithmetic》(2022) §4；此处集合为驯服可熔数，与全体可熔数有所区别。完整证明与算法说明见同目录《研究报告.md》。</footer>
+</main>
+<script src="katex/katex.min.js"></script>
+<script src="ordinal_core.js"></script>
+<script>
+/* ── 公式渲染 ───────────────────────────────────────────────
+   把工具输出的表达式（w^(w^2)、2^(-1541023937)、(43*2^(-3172419798))/125、
+   sum(C(j),j=0..1000000) 等）转成 HTML 数学排版：真分式、真上标、Σ 上下限。
+   纯前端、无依赖、无网络；解析失败时回退为转义后的原文。            */
+const escapeHtml=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function tokenize(src){
+  const out=[];let i=0;
+  const isDigit=c=>c>='0'&&c<='9';
+  const isLetter=c=>/[A-Za-z\u0391-\u03a9\u03b1-\u03c9]/.test(c);
+  while(i<src.length){
+    const c=src[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(c==='0'&&/[bBoOxX]/.test(src[i+1]||'')){   // 0b10.1001 这类进制字面量整体识别
+      let j=i+2;
+      while(j<src.length&&/[0-9a-fA-F]/.test(src[j]))j++;
+      if(src[j]==='.'){j++;while(j<src.length&&/[0-9a-fA-F]/.test(src[j]))j++;}
+      out.push({t:'radix',v:src.slice(i,j)});i=j;continue;
+    }
+    if(isDigit(c)){
+      let j=i;while(j<src.length&&isDigit(src[j]))j++;
+      if(src[j]==='.'&&isDigit(src[j+1])){j++;while(j<src.length&&isDigit(src[j]))j++;}
+      out.push({t:'num',v:src.slice(i,j)});i=j;continue;
+    }
+    if(isLetter(c)){let j=i;while(j<src.length&&(isLetter(src[j])||isDigit(src[j])))j++;out.push({t:'id',v:src.slice(i,j)});i=j;continue;}
+    if(c==='.'&&src[i+1]==='.'){out.push({t:'op',v:'..'});i+=2;continue;}
+    if('+-*/^=!'.includes(c)){out.push({t:'op',v:c});i++;continue;}
+    if('(),'.includes(c)){out.push({t:'punc',v:c});i++;continue;}
+    if(c==='·'||c==='×'){out.push({t:'op',v:'*'});i++;continue;}
+    if(c==='−'||c==='–'||c==='—'){out.push({t:'op',v:'-'});i++;continue;}
+    if(c==='ω'||c==='Ω'){out.push({t:'id',v:'w'});i++;continue;}
+    out.push({t:'raw',v:c});i++;
+  }
+  return out;
+}
+
+function makeStream(tokens){let i=0;return{peek:()=>tokens[i]||null,next:()=>tokens[i++]||null,more:()=>i<tokens.length};}
+
+function parseExpr(st,minPrec){
+  let left=parseUnary(st);
+  for(;;){
+    const tk=st.peek();
+    if(!tk||tk.t!=='op')break;
+    const prec=tk.v==='+'||tk.v==='-'?1:tk.v==='*'||tk.v==='/'?2:0;
+    if(prec===0||prec<minPrec)break;
+    st.next();
+    const right=parseExpr(st,prec+1);
+    left={t:'bin',op:tk.v,a:left,b:right,prec};
+  }
+  return left;
+}
+
+function parseUnary(st){
+  const tk=st.peek();
+  if(tk&&tk.t==='op'&&(tk.v==='-'||tk.v==='+')){st.next();return{t:'un',op:tk.v,a:parseUnary(st),prec:3};}
+  return parsePower(st);
+}
+
+function parsePower(st){
+  let base=parsePostfix(st);
+  const tk=st.peek();
+  if(tk&&tk.t==='op'&&tk.v==='^'){st.next();base={t:'pow',a:base,b:parseUnary(st),prec:4};}
+  return base;
+}
+
+function parsePostfix(st){
+  let node=parseAtom(st);
+  while(st.peek()&&st.peek().t==='op'&&st.peek().v==='!'){st.next();node={t:'fact',a:node,prec:5};}
+  return node;
+}
+
+function parseAtom(st){
+  const tk=st.next();
+  if(!tk)throw new Error('unexpected end');
+  if(tk.t==='num')return{t:'num',v:tk.v,prec:5};
+  if(tk.t==='radix')return{t:'radix',v:tk.v,prec:5};
+  if(tk.t==='raw')return{t:'raw',v:tk.v,prec:5};
+  if(tk.t==='id'){
+    const nxt=st.peek();
+    if(nxt&&nxt.t==='punc'&&nxt.v==='('){
+      if(tk.v==='sum')return parseSum(st);
+      st.next();
+      const args=[];
+      if(!(st.peek()&&st.peek().t==='punc'&&st.peek().v===')')){
+        args.push(parseExpr(st,1));
+        while(st.peek()&&st.peek().t==='punc'&&st.peek().v===','){st.next();args.push(parseExpr(st,1));}
+      }
+      const close=st.next();
+      if(!close||close.v!==')')throw new Error('missing )');
+      return{t:'call',name:tk.v,args,prec:5};
+    }
+    return{t:'id',v:tk.v,prec:5};
+  }
+  if(tk.t==='punc'&&tk.v==='('){
+    const e=parseExpr(st,1);
+    const close=st.next();
+    if(!close||close.v!==')')throw new Error('missing )');
+    return{t:'group',a:e,prec:e.prec};
+  }
+  throw new Error('unexpected token');
+}
+
+/* sum(EXPR, VAR=LO..HI)：工具输出里的有限和式，上下限本身也可以是表达式 */
+function parseSum(st){
+  st.next();                                   // (
+  const body=parseExpr(st,1);
+  let range=null;
+  if(st.peek()&&st.peek().t==='punc'&&st.peek().v===','){
+    st.next();
+    const v=st.next();
+    const eq=st.next();
+    if(!(v&&v.t==='id'&&eq&&eq.v==='='))throw new Error('bad range');
+    const lo=parseExpr(st,1);
+    const dots=st.next();
+    if(!(dots&&dots.v==='..'))throw new Error('bad range');
+    const hi=parseExpr(st,1);
+    range={v:v.v,lo,hi};
+  }
+  const close=st.next();
+  if(!close||close.v!==')')throw new Error('missing )');
+  return{t:'call',name:'sum',args:[body],range,prec:5};
+}
+
+function identHtml(v){
+  if(v==='w'||v==='W'||v==='omega')return 'ω';
+  if(v==='alpha')return 'α';
+  return '<i>'+escapeHtml(v)+'</i>';
+}
+
+/* 顶层可以带一个等号，例如 Φ(w^(w^w)) = 3 */
+function parseEquation(st){
+  const left=parseExpr(st,1);
+  if(st.peek()&&st.peek().t==='op'&&st.peek().v==='='){
+    st.next();
+    return{t:'eq',a:left,b:parseExpr(st,1),prec:0};
+  }
+  return left;
+}
+
+function renderNode(node,parentPrec){
+  const prec=node.prec||5;
+  let html;
+  switch(node.t){
+    case 'num':html=node.v;break;
+    case 'radix':html='<span class="lit">'+escapeHtml(node.v)+'</span>';break;
+    case 'raw':html=escapeHtml(node.v);break;
+    case 'id':html=identHtml(node.v);break;
+    case 'group':html=renderNode(node.a,0);break;
+    case 'un':html='−'+renderNode(node.a,3);break;
+    case 'pow':html=renderNode(node.a,5)+'<sup>'+renderNode(node.b,2)+'</sup>';break;
+    case 'eq':html=renderNode(node.a,0)+' = '+renderNode(node.b,0);break;
+    case 'fact':html=renderNode(node.a,5)+'!';break;
+    case 'bin':
+      if(node.op==='/')html='<span class="frac"><span class="num">'+renderNode(node.a,0)+'</span><span class="den">'+renderNode(node.b,0)+'</span></span>';
+      else if(node.op==='*')html=renderNode(node.a,2)+'·'+renderNode(node.b,2);
+      else if(node.op==='+')html=renderNode(node.a,1)+' + '+renderNode(node.b,2);
+      else html=renderNode(node.a,1)+' − '+renderNode(node.b,2);
+      break;
+    case 'call':
+      if(node.name==='sum'&&node.range){
+        const r=node.range;
+        html='<span class="bigop"><span class="up">'+renderNode(r.hi,0)+'</span><span class="sym">∑</span>'
+            +'<span class="dn">'+identHtml(r.v)+'='+renderNode(r.lo,0)+'</span></span>'+renderNode(node.args[0],0);
+      }else{
+        html='<i>'+escapeHtml(node.name)+'</i>('+node.args.map(a=>renderNode(a,0)).join(', ')+')';
+      }
+      break;
+    default:html=escapeHtml(String(node.v||''));
+  }
+  return prec<parentPrec?'<span class="paren">(</span>'+html+'<span class="paren">)</span>':html;
+}
+
+/* 同一棵语法树再输出一份 LaTeX，交给 KaTeX（离线随包提供）排版 */
+const GREEK={'\u03b1':'\\alpha','\u03b2':'\\beta','\u03b3':'\\gamma','\u03b4':'\\delta','\u03b5':'\\varepsilon',
+  '\u03b8':'\\theta','\u03bb':'\\lambda','\u03bc':'\\mu','\u03c0':'\\pi','\u03c3':'\\sigma','\u03c4':'\\tau',
+  '\u03c6':'\\phi','\u03c9':'\\omega','\u0393':'\\Gamma','\u0394':'\\Delta','\u0398':'\\Theta','\u039b':'\\Lambda',
+  '\u03a0':'\\Pi','\u03a3':'\\Sigma','\u03a6':'\\Phi','\u03a8':'\\Psi','\u03a9':'\\Omega'};
+const texEscape=s=>String(s).replace(/[\\{}$&#^_%~]/g,c=>'\\'+c);
+
+function identTex(v){
+  if(v==='w'||v==='W'||v==='omega')return '\\omega';
+  if(GREEK[v])return GREEK[v];
+  if(/^[A-Za-z]$/.test(v))return v;
+  if(/^[A-Za-z]{2,}$/.test(v))return '\\operatorname{'+v+'}';
+  return texEscape(v);
+}
+
+function renderTex(node,parentPrec){
+  // 括号本身已表达分组：内部若是乘除级等原子型表达式，就省掉多余的一层
+  if(node.t==='group'){
+    const a=node.a,bare=a.t!=='un'&&a.t!=='pow'&&(a.prec||5)>=2;
+    return bare?renderTex(a,0):'\\left('+renderTex(a,0)+'\\right)';
+  }
+  const prec=node.prec||5;
+  let tex;
+  switch(node.t){
+    case 'num':tex=node.v;break;
+    case 'radix':tex='\\texttt{'+texEscape(node.v)+'}';break;
+    case 'raw':tex=texEscape(node.v);break;
+    case 'id':tex=identTex(node.v);break;
+    case 'group':tex='\\left('+renderTex(node.a,0)+'\\right)';break;
+    case 'un':tex='-'+renderTex(node.a,3);break;
+    case 'pow':{
+      // 指数自带 ^{} 分组，形如 2^(-3) 的外层括号是多余的
+      let e=node.b;while(e&&e.t==='group')e=e.a;
+      tex=renderTex(node.a,5)+'^{'+renderTex(e,0)+'}';
+      break;
+    }
+    case 'fact':tex=renderTex(node.a,5)+'!';break;
+    case 'eq':tex=renderTex(node.a,0)+' = '+renderTex(node.b,0);break;
+    case 'bin':
+      if(node.op==='/'){
+        // \frac 自带分组，分子分母外层的多余括号去掉
+        const unwrap=n=>{while(n&&n.t==='group')n=n.a;return n;};
+        tex='\\frac{'+renderTex(unwrap(node.a),0)+'}{'+renderTex(unwrap(node.b),0)+'}';
+      }
+      else if(node.op==='*')tex=renderTex(node.a,2)+'\\cdot '+renderTex(node.b,2);
+      else if(node.op==='+')tex=renderTex(node.a,1)+' + '+renderTex(node.b,2);
+      else tex=renderTex(node.a,1)+' - '+renderTex(node.b,2);
+      break;
+    case 'call':
+      if(node.name==='sum'&&node.range){
+        const r=node.range;
+        tex='\\sum_{'+identTex(r.v)+'='+renderTex(r.lo,0)+'}^{'+renderTex(r.hi,0)+'}'+renderTex(node.args[0],0);
+      }else{
+        tex=identTex(node.name)+'\\left('+node.args.map(a=>renderTex(a,0)).join(', ')+'\\right)';
+      }
+      break;
+    default:tex=texEscape(String(node.v||''));
+  }
+  return prec<parentPrec?'\\left('+tex+'\\right)':tex;
+}
+
+function renderMath(text,displayStyle=true){
+  const src=String(text);
+  try{
+    const st=makeStream(tokenize(src));
+    const ast=parseEquation(st);
+    if(st.more())throw new Error('trailing input');
+    if(typeof katex!=='undefined'){
+      // displayStyle 让结果行的分式用展示尺寸，而不是行内缩小的 script 尺寸
+      const body=renderTex(ast,0);
+      return katex.renderToString(displayStyle?'\\displaystyle '+body:body,{throwOnError:false,strict:false});
+    }
+    return renderNode(ast,0);            // 没加载到 KaTeX 时退回内置排版
+  }catch(err){
+    return escapeHtml(src);
+  }
+}
+
+/* ── 界面 ─────────────────────────────────────────────── */
+const $=id=>document.getElementById(id);
+let lastData=null;
+const textNode=s=>document.createTextNode(s);
+
+/* 顶部函数定义同样交给 KaTeX */
+const staticBase={def:$('def')?$('def').innerHTML:null};
+function renderStatic(){
+  const on=typeof katex!=='undefined';
+  const def=$('def');
+  if(def)def.innerHTML=on?katex.renderToString(def.dataset.tex,{throwOnError:false,displayMode:true}):staticBase.def;
+}
+
+function formula(text,cls){
+  const span=document.createElement('span');
+  span.className='mrow'+(cls?' '+cls:'');
+  span.innerHTML=renderMath(text);
+  return span;
+}
+
+function updatePreview(){
+  const box=$('preview'),raw=$('value').value.trim();
+  const writable=raw.length>0;
+  box.replaceChildren();
+  if(!writable)return;
+  box.append(formula(raw,'sm'));
+}
+
+function drawResult(d){
+  lastData=d;
+  const status=$('status'),out=$('answer'),det=$('details');
+  out.className='value';out.replaceChildren();det.replaceChildren();
+  const value=d['f(x)'];
+  if(d.status==='ok'||d.status==='symbolic'){
+    status.className='status';
+    status.textContent=d.status==='symbolic'?'精确符号表达式（指数尚未展开）':'精确结果';
+    if(d.rows){
+      out.className='value plain';
+      out.textContent='已返回 '+d.rows.length+' 行数据；网页采样入口已移除，请用命令行 table。';
+    }else if(d.gap!=null){
+      out.append(textNode('跳跃高度 = '),formula(d.gap));
+    }else if(value!=null){
+      out.append(textNode('f(x) = '),formula(value));
+      const line=(label,node)=>{const row=document.createElement('div');row.append(textNode(label),node);return row;};
+      det.append(line('下一个间断点：',formula(d.next_discontinuity,'sm')));
+      if(d.ordinal)det.append(line('序数：',formula(d.ordinal,'sm')));
+      if(d.message){const row=document.createElement('div');row.textContent=d.message;det.append(row);}
+      if(d.definitions){
+        const row=document.createElement('div');row.append(textNode('定义：'));
+        Object.entries(d.definitions).forEach(([k,v],idx)=>{
+          if(idx)row.append(textNode('；'));
+          row.append(formula(k,'sm'),textNode(' = '));
+          row.append(/^[\x20-\x7e]+$/.test(v)&&/[(^*\/]/.test(v)?formula(v,'sm'):textNode(v));
+        });
+        det.append(row);
+      }
+    }else{
+      out.append(formula('Φ('+(d.ordinal||'')+') = '+(d.point||'')));
+      det.textContent=$('action').value==='encode'?'序数到间断点的精确对应。':'该实数确为间断点。';
+    }
+  }else if(d.status==='not_discontinuity'){
+    status.className='status';status.textContent='判断完成';
+    out.className='value plain';out.textContent='该数不是间断点';
+    det.textContent='点 '+(d.point||'')+(d.message?'；'+d.message:'');
+  }else{
+    status.className='status error';
+    status.textContent=d.status==='resource_limit'?'计算资源不足':'输入有误';
+    out.className='value plain';out.textContent=d.message||'';
+  }
+}
+
+function refresh(){
+  for(const tab of document.querySelectorAll('#tabs button')){
+    const on=tab.dataset.action===$('action').value;
+    tab.classList.toggle('on',on);
+    tab.setAttribute('aria-selected',on?'true':'false');
+  }
+  const ord=['encode','gap'].includes($('action').value);
+  $('inputLabel').textContent=ord?'序数 α < ε₀':'精确有理数或二次幂表达式 x';
+  $('inputHint').textContent=ord?'w 或 ω 表示 ω；例如 w^2*3+w+4。乘号须显式书写。':'支持 2.999、3、3-2^(-1000000)、0b10.1001（二进制小数）与 3-1/2 这类算式；3 以上会尝试符号递推，未展开的 d(α) 会明确标注。';
+  updatePreview();
+}
+function selectAction(next){
+  $('action').value=next;
+  $('value').value=['encode','gap'].includes(next)?'w^2+w':'2.999';
+  refresh();
+}
+for(const tab of document.querySelectorAll('#tabs button'))tab.onclick=()=>selectAction(tab.dataset.action);
+$('value').oninput=updatePreview;
+$('form').onsubmit=async e=>{
+ e.preventDefault();
+ if(typeof OrdinalCore==='undefined'){
+  drawResult({status:'invalid_input',message:'计算核心 ordinal_core.js 没有加载成功，请确认它与 index.html 在同一目录。'});
+  return;
+ }
+ $('submit').disabled=true;$('status').className='status';$('status').textContent='正在计算…';$('answer').replaceChildren();$('details').replaceChildren();updatePreview();
+ try{
+  await new Promise(r=>setTimeout(r,0));          // 先让"正在计算…"绘制出来
+  drawResult(OrdinalCore.safeOperate($('action').value,$('value').value));
+ }catch(err){
+  drawResult({status:'invalid_input',message:'计算出错：'+((err&&err.message)||err)});
+ }finally{$('submit').disabled=false;}
+};
+refresh();
+renderStatic();
+const svg=$('plot'),ns='http://www.w3.org/2000/svg';
+function el(tag,attrs,text){const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text)n.textContent=text;svg.append(n);}
+const X=x=>48+510*x,Y=y=>223-340*y;
+el('line',{x1:40,y1:223,x2:860,y2:223,stroke:'#d9d9d0'});
+el('line',{x1:48,y1:235,x2:48,y2:35,stroke:'#d9d9d0'});
+for(const [x,t]of [[0,'0'],[.5,'½'],[1,'1 ↔ ω'],[1.25,'5/4 ↔ ω·2'],[1.5,'3/2 ↔ ω²']])el('text',{x:X(x),y:250,'text-anchor':'middle',fill:'#8f8f86','font-size':15},t);
+el('text',{x:15,y:48,fill:'#8f8f86','font-size':15},'f(x)');
+function segment(p,q){const h=q-p;el('line',{x1:X(p),y1:Y(h),x2:X(q),y2:Y(0),stroke:'#2f5d50','stroke-width':2});el('circle',{cx:X(p),cy:Y(h),r:3.5,fill:'#2f5d50'});el('circle',{cx:X(q),cy:Y(0),r:3,fill:'white',stroke:'#2f5d50'});}
+for(let n=0;n<7;n++)segment(1-2**(-n),1-2**(-n-1));
+// For k>=1, Phi(w*k+n)=1.5-2^(-k-1)-2^(-k-n-1).
+for(let k=1;k<=5;k++)for(let n=0;n<5;n++)segment(1.5-2**(-k-1)-2**(-k-n-1),1.5-2**(-k-1)-2**(-k-n-2));
+segment(1.5,1.5+1/32);
+for(const x of [1,1.25,1.5])el('line',{x1:X(x),y1:75,x2:X(x),y2:218,stroke:'#e4e4dc','stroke-dasharray':'4 5'});
+el('text',{x:X(.1),y:55,fill:'#2f5d50','font-size':15},'0, 1, 2, … → ω');
+el('text',{x:X(1.02),y:70,fill:'#2f5d50','font-size':15},'ω, ω+1, … → ω·2');
+</script>
+</html>
